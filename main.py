@@ -5,7 +5,7 @@ from fastapi import FastAPI, Body, HTTPException, status
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from pydantic.functional_validators import BeforeValidator
-
+from dotenv import load_dotenv
 
 from typing_extensions import Annotated
 
@@ -20,8 +20,12 @@ from typing import Optional
 
 from datetime import datetime
 
-SECRET_KEY = "d7"
+load_dotenv()
+
+SECRET_KEY = os.environ["SECRET_KEY"]
 ALGORITHM = "HS256"
+
+print(SECRET_KEY)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -52,7 +56,10 @@ app = FastAPI(
     title="kedubak API",
     summary="API for kedubak project",
 )
-client = motor.motor_asyncio.AsyncIOMotorClient(os.environ["MONGODB_URL"])
+
+mongo_host = os.environ["MONGO_HOST"]
+mongo_port = os.environ["MONGO_PORT"]
+client = motor.motor_asyncio.AsyncIOMotorClient(f"mongodb://{mongo_host}:{mongo_port}")
 db = client.kedubak
 users_collection = db.get_collection("users")
 posts_collection = db.get_collection("posts")
