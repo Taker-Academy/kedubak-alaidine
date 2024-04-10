@@ -13,7 +13,39 @@ from bson import ObjectId
 import motor.motor_asyncio
 from pymongo import ReturnDocument
 
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jwt import PyJWTError, decode
+from typing import Optional
+
 from datetime import datetime
+
+SECRET_KEY = "d7"
+ALGORITHM = "HS256"
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email = payload.get("sub")
+        if email is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        user = await users_collection.find_one({"email": email})
+        if user is None:
+            raise HTTPException(status_code=400, detail="User not found")
+        return user
+    except PyJWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 app = FastAPI(
@@ -26,6 +58,7 @@ users_collection = db.get_collection("users")
 posts_collection = db.get_collection("posts")
 
 PyObjectId = Annotated[str, BeforeValidator(str)]
+
 
 class UserModel(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -50,8 +83,10 @@ class CommentsModel(BaseModel):
     first_name: str
     content: str
 
+
 class UpdatePostModel(BaseModel):
     content: Optional[str] = None
+
 
 class Post(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -62,15 +97,18 @@ class Post(BaseModel):
     comments: List[CommentsModel]
     upvotes: List[str]
 
+
 class UpdatePostModel(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
+
 
 @app.post("auth/register")
 async def register(body):
     new_user = await users_collection.insert_one(body)
     created_user = await users_collection.find_one({"_id": new_user.inserted_id})
     return created_user
+
 
 @app.post("auth/login")
 async def login(body):
@@ -79,56 +117,69 @@ async def login(body):
         return user
     return {"message": "Invalid credentials"}
 
+
 @app.get("/user/me")
-async def get_me(body):
-    user = await users_collection.find_one({"email": body["email"]})
-    return user
+async def get_me(current_user: dict = Depends(get_current_user)):
+    return current_user
+
 
 @app.put("/edit")
-async def edit_user(body):
+async def edit_user(body, current_user: dict = Depends(get_current_user)):
     user = await users_collection.find_one_and_update(
         {"email": body["email"]},
-        {"firstName": body["firstName"], "lastName": body["lastName"], "password": body["password"]},
+        {
+            "firstName": body["firstName"],
+            "lastName": body["lastName"],
+            "password": body["password"],
+        },
         {"password": body["password"]},
         {"lastName": body["lastName"]},
-        {"$set": body},
+        {"$set": body.dict(exclude_unset=True)},
+
         return_document=ReturnDocument.AFTER,
     )
     return user
 
+
 @app.delete("/remove")
-async def remove_user(body):
+async def remove_user(body, current_user: dict = Depends(get_current_user)):
     user = await users_collection.delete_one({"email": body["email"]})
     return user
 
+
 @app.get("/post/")
-async def get_posts():
+async def get_posts(current_user: dict = Depends(get_current_user)):
     posts = await posts_collection.find().to_list(1000)
     return posts
 
+
 @app.post("/post/")
-async def create_post(body):
+async def create_post(body, current_user: dict = Depends(get_current_user)):
     new_post = await posts_collection.insert_one(body)
     created_post = await posts_collection.find_one({"_id": new_post.inserted_id})
     return created_post
 
+
 @app.get("/me")
-async def get_me(body):
+async def get_me(body, current_user: dict = Depends(get_current_user)):
     user = await users_collection.find_one({"email": body["email"]})
     return user
 
+
 @app.get("/:{id}")
-async def get_post(id):
+async def get_post(id, current_user: dict = Depends(get_current_user)):
     post = await posts_collection.find_one({"_id": id})
     return post
 
+
 @app.delete("/:{id}")
-async def delete_post(id):
+async def delete_post(id, current_user: dict = Depends(get_current_user)):
     post = await posts_collection.delete_one({"_id": id})
     return post
 
+
 @app.post("/vote/:{id}")
-async def upvote_post(id, body):
+async def upvote_post(id, body, current_user: dict = Depends(get_current_user)):
     post = await posts_collection.find_one({"_id": id})
     if body["email"] in post["upvotes"]:
         return {"message": "User already upvoted"}
@@ -139,7 +190,10 @@ async def upvote_post(id, body):
     )
     return post
 
+
 @app.post("/comment/:{id}")
-async def comment_post(id, body):
+async def comment_post(id, body, current_user: dict = Depends(get_current_user)):
     post = await posts_collection.find_one({"_id": id})
-    new_comment = CommentsModel(user_id=body["user_id"], first_name=body["first_name"], content=body["content"])
+    new_comment = CommentsModel(
+        user_id=body["user_id"], first_name=body["first_name"], content=body["content"]
+    )

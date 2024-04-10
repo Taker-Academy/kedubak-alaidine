@@ -45,3 +45,6 @@ typing-extensions==4.8.0
     #   pydantic-core
 uvicorn==0.28.0
     # via -r requirements.in
+
+PyJWT==2.3.0
+    # via -r requirements.in
