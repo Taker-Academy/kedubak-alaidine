@@ -7,6 +7,9 @@ from pydantic import BaseModel, Field
 from pydantic.functional_validators import BeforeValidator
 from dotenv import load_dotenv
 
+from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import MongoClient
+
 from typing_extensions import Annotated
 
 from bson import ObjectId
@@ -25,9 +28,23 @@ load_dotenv()
 SECRET_KEY = os.environ["SECRET_KEY"]
 ALGORITHM = "HS256"
 
-print(SECRET_KEY)
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+app = FastAPI(
+    title="kedubak API",
+    summary="API for kedubak project",
+)
+
+PyObjectId = Annotated[str, BeforeValidator(str)]
+
+mongo_host = os.environ["MONGO_HOST"]
+mongo_port = os.environ["MONGO_PORT"]
+mongo_name = os.environ["MONGO_NAME"]
+
+client = AsyncIOMotorClient(f"mongodb://{mongo_host}:{mongo_port}")
+db = client.get_database(mongo_name)
+users_collection = db.get_collection("users")
+posts_collection = db.get_collection("posts")
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
@@ -50,21 +67,6 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
-
-app = FastAPI(
-    title="kedubak API",
-    summary="API for kedubak project",
-)
-
-mongo_host = os.environ["MONGO_HOST"]
-mongo_port = os.environ["MONGO_PORT"]
-client = motor.motor_asyncio.AsyncIOMotorClient(f"mongodb://{mongo_host}:{mongo_port}")
-db = client.kedubak
-users_collection = db.get_collection("users")
-posts_collection = db.get_collection("posts")
-
-PyObjectId = Annotated[str, BeforeValidator(str)]
 
 
 class UserModel(BaseModel):
@@ -142,7 +144,6 @@ async def edit_user(body, current_user: dict = Depends(get_current_user)):
         {"password": body["password"]},
         {"lastName": body["lastName"]},
         {"$set": body.dict(exclude_unset=True)},
-
         return_document=ReturnDocument.AFTER,
     )
     return user

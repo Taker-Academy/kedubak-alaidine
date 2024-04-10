@@ -48,3 +48,6 @@ uvicorn==0.28.0
 
 PyJWT==2.3.0
     # via -r requirements.in
+
+python-dotenv==0.19.1
+    # via -r requirements.in
