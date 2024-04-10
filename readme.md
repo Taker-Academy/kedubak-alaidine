@@ -69,7 +69,7 @@ Au fur et à mesure que vous compléterez votre API, vous verrez le site s'amél
 
 ## Ressources 📚
 
-Dans la poubelle de Stéphane vous avez miraculeusement trouvé un [bout de papier](./doc.md) sur lequel il avait gribouillé l'ensemble de l'architecture des routes du backend !
+Dans la poubelle de Stéphane vous avez miraculeusement trouvé un [bout de papier](./**doc**.md) sur lequel il avait gribouillé l'ensemble de l'architecture des routes du backend !
 
 - [MongoDB Atlas](https://cloud.mongodb.com/v2#/clusters)
 - [RESTful API](https://restfulapi.net/)

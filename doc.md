@@ -68,7 +68,7 @@ Le serveur renvoie un token JWT qui permettra à l'utilisateur de s'authentifier
 
 ```json
 {
-    "email": "my.email@bip.com"
+    "email": "my.email@bip.com",
     "password": "myPassword123",
     "firstName": "John",
     "lastName": "Doe"
@@ -163,7 +163,7 @@ Cette route permet de récupérer les informations de l'utilisateur connecté.
 {
     "ok": true,
     "data": {
-        "email": "
+        "email": "test@test.com",
         "firstName": "John",
         "lastName": "Doe"
     }
@@ -276,6 +276,7 @@ Cette route permet de récupérer la liste des éléments (posts).
     "data": [
         // Liste des éléments (posts)
         {
+            "_id": "cfz5a15ae84a1z87",
             "createdAt": "2023-01-01T00:00:00.000Z",
             "userId": "user123",
             "firstName": "John",
@@ -329,6 +330,7 @@ Cette route permet à un utilisateur de créer un nouvel élément (post).
 {
     "ok": true,
     "data": {
+        "_id": "cfz5a15ae84a1z87",
         "createdAt": "2023-01-01T00:00:00.000Z",
         "userId": "user123",
         "firstName": "John",
@@ -368,6 +370,7 @@ Cette route permet de récupérer la liste des éléments (posts) appartenant à
     "data": [
         // Liste des éléments (posts) de l'utilisateur
         {
+            "_id": "cfz5a15ae84a1z87",
             "createdAt": "2023-01-01T00:00:00.000Z",
             "userId": "user123",
             "firstName": "John",
@@ -421,6 +424,7 @@ Cette route permet de récupérer les détails d'un élément (post) spécifique
 {
     "ok": true,
     "data": {
+        "_id": "cfz5a15ae84a1z87",
         "createdAt": "2023-01-01T00:00:00.000Z",
         "userId": "user123",
         "firstName": "John",
@@ -474,6 +478,7 @@ Cette route permet à l'utilisateur propriétaire de supprimer un élément (pos
 {
     "ok": true,
     "data": {
+        "_id": "cfz5a15ae84a1z87",
         "createdAt": "2023-01-01T00:00:00.000Z",
         "userId": "user123",
         "firstName": "John",
@@ -547,7 +552,7 @@ Cette route permet à l'utilisateur de voter pour un élément (post) spécifiqu
 
 > Prefix: `/comment`
 
-### Endpoint [POST] `/` 🔐
+### Endpoint [POST] `/:id` 🔐
 
 ## Description
 
@@ -558,6 +563,10 @@ Cette route permet à un utilisateur de créer un nouveau commentaire sur un él
 ### Header
 
 - **Authorization (String, required):** Token JWT pour l'authentification.
+
+### URL Paramètre
+
+- **id (String, required):** ID de l'élément (post) à commenter.
 
 ### Body
 
@@ -583,3 +592,16 @@ Cette route permet à un utilisateur de créer un nouveau commentaire sur un él
 - **401 Unauthorized:** Mauvais token JWT.
 
 ---
+
+# Erreurs
+
+Toutes les erreurs renverront un objet JSON avec un message d'erreur approprié et un code d'état HTTP correspondant.
+
+## Format de réponse
+
+```json
+{
+    "ok": false,
+    "error": "Description de l'erreur",
+}
+```
